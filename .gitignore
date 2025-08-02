@@ -1,0 +1,6 @@
+/.venv
+/.python-version
+
+/players.json
+
+/*.html
