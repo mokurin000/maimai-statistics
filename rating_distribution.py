@@ -1,9 +1,9 @@
-import json
 from typing import Callable
 
 from pyecharts import options as opts
 from pyecharts.charts import Bar
 from pyecharts.globals import ThemeType
+import orjson as json
 import zstd
 
 
