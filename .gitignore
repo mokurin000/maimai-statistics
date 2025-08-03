@@ -1,6 +1,7 @@
 /.venv
 /.python-version
 
-/players.json
+/players.json.zst
+/b50.json.zst
 
 /*.html
