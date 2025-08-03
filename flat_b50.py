@@ -18,6 +18,7 @@ df = (
         pl.col("rating"),
         pl.col("totalList").struct.unnest(),
     )
+    .filter(pl.col("achievement") <= 1010000)
 )
 
 df.collect().write_parquet("b50_flat.parquet")

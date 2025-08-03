@@ -3,26 +3,14 @@ from typing import Callable
 from pyecharts import options as opts
 from pyecharts.charts import Bar
 from pyecharts.globals import ThemeType
-import orjson as json
-import zstd
+
+import polars as pl
 
 
-def access_playerrating(obj: dict) -> int:
-    return obj["playerRating"]
-
-
-def access_rating(obj: dict) -> int:
-    return obj["userRating"]["rating"]
-
-
-# 读取 ZSTD 文件
-def load_data(file_path, access_rating=Callable[[dict], int]):
-    with open(file_path, "rb") as f:
-        raw = f.read()
-    uncompress = zstd.decompress(raw)
-    data = json.loads(uncompress)
-
-    return [access_rating(obj) for obj in data]
+# 读取 Parquet 文件
+def load_data(file_path, access_rating=Callable[[dict], int]) -> pl.LazyFrame:
+    df = pl.scan_parquet(file_path)
+    return df
 
 
 # 绘制 playerRating 分布直方图
@@ -74,18 +62,14 @@ def create_histogram(
 # 主程序
 if __name__ == "__main__":
     try:
-        file_path = "players.json.zst"
-        ratings = load_data(file_path, access_playerrating)
-        create_histogram(ratings, end=10001, output_file="below-w0.html")
-        create_histogram(ratings, start=10000, output_file="after-w0.html")
-
-        file_path = "b50.json.zst"
-        ratings = load_data(file_path, access_rating)
+        file_path = "b50.parquet"
+        df = load_data(file_path)
+        ratings = (
+            df.select(pl.col("userRating").struct.unnest())
+            .select("rating")
+            .collect()["rating"]
+        )
         create_histogram(ratings, end=10001, output_file="below-w0-b50.html")
         create_histogram(ratings, start=10000, output_file="after-w0-b50.html")
-    except FileNotFoundError:
-        print("Error: data.json file not found")
-    except json.JSONDecodeError:
-        print("Error: Invalid JSON format")
     except Exception as e:
         print(f"Error: {e.__class__, __name__}: {str(e)}")
