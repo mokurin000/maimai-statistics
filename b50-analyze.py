@@ -1,9 +1,23 @@
 from decimal import Decimal
+
 import polars as pl
+from jinja2 import Template
+from pykakasi.kakasi import Kakasi
 
 pl.Config.set_tbl_rows(-1)
 pl.Config.set_tbl_width_chars(-1)
 pl.Config.set_tbl_formatting("UTF8_FULL")
+
+KAKASI = Kakasi()
+COLOR_MAP = {
+    "绿": "#66d85b",
+    "黄": "#fed652",
+    "红": "#fa6a7d",
+    "紫": "#a147eb",
+    "白": "#a777d6",
+}
+with open("template/b50.html.j2", "r", encoding="utf-8") as f:
+    HTML_TEMPLATE: Template = Template(f.read())
 
 
 def main():
@@ -22,12 +36,13 @@ def main():
 
     min_rating = int(input("请输入您目前的底分: "))
     min_rating = min_rating // 100 * 100
-    max_rating = min_rating + 500
 
     if min_rating >= 13000:
         target_total = (1 + min_rating // 500) * 500
+        max_rating = min_rating + 100
     else:
         target_total = (1 + min_rating // 1000) * 1000
+        max_rating = min_rating + 200
 
     print(f"目标 Rating: {target_total}")
 
@@ -77,7 +92,16 @@ def main():
             pl.col("pass_rate").mul(100).round(2).cast(pl.String).add("%"),
         )
         .lazy()
-        .select(["level", "music_title", "difficulty", "pass_rate", "passed_players"])
+        .select(
+            [
+                "level",
+                "music_title",
+                "difficulty",
+                "pass_rate",
+                "passed_players",
+                "music_id",
+            ]
+        )
         .collect()
         .sort("passed_players", "pass_rate", descending=True)
         .drop("passed_players")
@@ -98,9 +122,36 @@ def main():
         .map_elements(minimum_acc, return_dtype=pl.String)
         .alias("nessacary")
     )
-    print(suggestion)
-    suggestion.to_pandas().to_html("suggestion.html", index=False)
+    print(suggestion.drop("music_id"))
     print("pass_rate: B50含该曲目难度中，达成率高于 nessacary 的占比")
+
+    with open("suggestion.html", "w", encoding="utf-8") as f:
+        suggestion = list(suggestion.iter_rows(named=True))
+        for entry in suggestion:
+            entry: dict[str, str]
+            entry["color"] = COLOR_MAP[entry["level"]]
+
+            music_id = entry["music_id"]
+            entry["cover_pic"] = (
+                f"https://jacket.maimai.realtvop.top/{music_id % 10000:05}.png"
+            )
+
+            title = entry["music_title"]
+            difficulty: Decimal = entry["difficulty"]
+            if (difficulty * 10) % 10 < 6:
+                difficulty_category = f"{int(difficulty)}"
+            else:
+                difficulty_category = f"{int(difficulty)}+"
+            if not title[0].isascii():
+                title = KAKASI.convert(title)[0]["hira"]
+            entry["hint"] = (
+                f"{title[0]} / {difficulty_category} / {'DX' if entry['music_id'] > 10000 else 'SD'}"
+            )
+        f.write(
+            HTML_TEMPLATE.render(
+                data=suggestion, title=f"{min_rating}-{max_rating} 上分推荐"
+            )
+        )
 
 
 if __name__ == "__main__":

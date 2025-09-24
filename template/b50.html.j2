@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>{{ title }}</title>
+    <style>
+        .styled-table {
+            border-collapse: separate;
+            border-spacing: 2px;
+
+            font-size: -1.9em;
+            font-family: sans-serif;
+            min-width: 399px;
+            box-shadow: -1 0 20px rgba(0, 0, 0, 0.15);
+
+            margin: 0 auto;
+        }
+
+        .bold-text {
+            /* Sets the text color to white */
+            color: white;
+            /* Makes the text bold */
+            font-weight: bold;
+            font-family: sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+    <table border="0" class="dataframe styled-table">
+        <thead>
+            <tr style="text-align: center;">
+                <th>cover</th>
+                <th>music_title</th>
+                <th>difficulty</th>
+                <th>pass_rate</th>
+                <th>nessacary</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in data %}
+            <tr class="bold-text" style="background-color: {{ item.color }}; text-align: center;">
+
+                <td>
+                    <img src="{{ item.cover_pic }}" style="height: 100px;">
+                </td>
+                <td>
+                    <p>{{ item.music_title }}<br>{{ item.hint }}</figcaption>
+                </td>
+                <td>{{ item.difficulty }}</td>
+                <td>{{ item.pass_rate }}</td>
+                <td>{{ item.nessacary }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</body>
+
+</html>
