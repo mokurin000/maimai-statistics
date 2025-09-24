@@ -14,7 +14,6 @@ pc = (
 
 rating = (
     pl.scan_parquet("players.parquet")
-    .rename({"userId": "user_id", "playerRating": "rating"})
     .select(["user_id", "rating"])
     .join(pc, on="user_id")
     .drop("user_id")
