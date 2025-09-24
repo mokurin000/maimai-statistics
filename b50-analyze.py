@@ -33,7 +33,10 @@ def render_html(b50_rating: int, output: str | Path = "suggestion.html"):
 
     min_rating = b50_rating // 100 * 100
 
-    if min_rating >= 13000:
+    if min_rating >= 15000:
+        target_total = min_rating + 100
+        max_rating = min_rating + 100
+    elif min_rating >= 13000:
         target_total = (1 + min_rating // 500) * 500
         max_rating = min_rating + 100
     else:
@@ -92,7 +95,7 @@ def render_html(b50_rating: int, output: str | Path = "suggestion.html"):
                 return_dtype=pl.String,
             )
         )
-        .filter(pl.col("pass_rate").ge(0.98))
+        # .filter(pl.col("pass_rate").ge(0.98))
         .with_columns(
             pl.col("pass_rate").mul(100).round(2).cast(pl.String).add("%"),
         )
@@ -157,5 +160,5 @@ def render_html(b50_rating: int, output: str | Path = "suggestion.html"):
 
 
 if __name__ == "__main__":
-    for rating in range(5000, 16401, 100):
+    for rating in range(15000, 16401, 100):
         render_html(rating, f"suggestion-{rating:05}.html")
