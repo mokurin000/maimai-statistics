@@ -1,26 +1,23 @@
 from decimal import Decimal
+from pathlib import Path
 
 import polars as pl
 from jinja2 import Template
 from pykakasi.kakasi import Kakasi
 
-pl.Config.set_tbl_rows(-1)
-pl.Config.set_tbl_width_chars(-1)
-pl.Config.set_tbl_formatting("UTF8_FULL")
-
 KAKASI = Kakasi()
 COLOR_MAP = {
-    "绿": "#66d85b",
-    "黄": "#fed652",
-    "红": "#fa6a7d",
-    "紫": "#a147eb",
-    "白": "#a777d6",
+    "EASY": "#66d85b",
+    "ADVANCED": "#fed652",
+    "EXPERT": "#fa6a7d",
+    "MASTER": "#a147eb",
+    "RE:MASTER": "#a777d6",
 }
 with open("template/b50.html.j2", "r", encoding="utf-8") as f:
     HTML_TEMPLATE: Template = Template(f.read())
 
 
-def main():
+def render_html(b50_rating: int, output: str | Path = "suggestion.html"):
     musics = (
         pl.scan_parquet("musics.parquet")
         .select(["id", "name", "level", "difficulty"])
@@ -34,8 +31,7 @@ def main():
     )
     b50 = pl.scan_parquet("b50.parquet").join(players, on="user_id")
 
-    min_rating = int(input("请输入您目前的底分: "))
-    min_rating = min_rating // 100 * 100
+    min_rating = b50_rating // 100 * 100
 
     if min_rating >= 13000:
         target_total = (1 + min_rating // 500) * 500
@@ -85,7 +81,15 @@ def main():
         .join(musics.unique(), on=["music_id", "level"])
         .with_columns(
             pl.col("level").map_elements(
-                lambda level: "绿黄红紫白宴"[level], return_dtype=pl.String
+                lambda level: [
+                    "EASY",
+                    "ADVANCED",
+                    "EXPERT",
+                    "MASTER",
+                    "RE:MASTER",
+                    "UTAGE",
+                ][level],
+                return_dtype=pl.String,
             )
         )
         .with_columns(
@@ -122,10 +126,8 @@ def main():
         .map_elements(minimum_acc, return_dtype=pl.String)
         .alias("nessacary")
     )
-    print(suggestion.drop("music_id"))
-    print("pass_rate: B50含该曲目难度中，达成率高于 nessacary 的占比")
 
-    with open("suggestion.html", "w", encoding="utf-8") as f:
+    with open(output, "w", encoding="utf-8") as f:
         suggestion = list(suggestion.iter_rows(named=True))
         for entry in suggestion:
             entry: dict[str, str]
@@ -155,4 +157,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    for rating in range(5000, 15001, 500):
+        render_html(rating, f"suggestion-{rating:05}.html")
