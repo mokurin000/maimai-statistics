@@ -157,5 +157,5 @@ def render_html(b50_rating: int, output: str | Path = "suggestion.html"):
 
 
 if __name__ == "__main__":
-    for rating in range(5000, 15001, 500):
+    for rating in range(5000, 16401, 100):
         render_html(rating, f"suggestion-{rating:05}.html")
