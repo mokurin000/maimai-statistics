@@ -1,4 +1,9 @@
+from decimal import Decimal
 import polars as pl
+
+pl.Config.set_tbl_rows(-1)
+pl.Config.set_tbl_width_chars(-1)
+pl.Config.set_tbl_formatting("UTF8_FULL")
 
 
 def main():
@@ -27,6 +32,11 @@ def main():
     print(f"目标 Rating: {target_total}")
 
     target_rating = target_total // 50
+    rating = (
+        pl.scan_csv("rating_table.csv")
+        .filter(pl.col("target_rating").eq(target_rating))
+        .collect()
+    )
 
     print(
         f"正在为您查找 [{min_rating}, {max_rating}] 区间玩家中，\n常见 rating >= {target_rating} 的歌曲..."
@@ -69,15 +79,28 @@ def main():
         .lazy()
         .select(["level", "music_title", "difficulty", "pass_rate", "passed_players"])
         .collect()
-        .sort("passed_players", descending=True)
+        .sort("passed_players", "pass_rate", descending=True)
+        .drop("passed_players")
         .head(30)
     )
-    pl.Config.set_tbl_rows(-1)
-    pl.Config.set_tbl_width_chars(-1)
-    pl.Config.set_tbl_formatting("UTF8_FULL")
-    print(passed.rename({"passed_players": "passed"}))
-    print("passed: B50含有该曲目难度的玩家中有多少已达到所需达成率")
-    print("pass_rate: passed 相比于B50含该曲目难度的总人数占比")
+
+    def minimum_acc(difficulty: Decimal) -> str:
+        acc = (
+            rating.filter(pl.col("difficulty") <= difficulty)
+            .get_column("achievement")
+            .cast(pl.String)
+            .first()
+        )
+        return f"{acc[:-4]}.{acc[-4:]}%"
+
+    suggestion = passed.with_columns(
+        pl.col("difficulty")
+        .map_elements(minimum_acc, return_dtype=pl.String)
+        .alias("nessacary")
+    )
+    print(suggestion)
+    suggestion.to_pandas().to_html("suggestion.html", index=False)
+    print("pass_rate: B50含该曲目难度中，达成率高于 nessacary 的占比")
 
 
 if __name__ == "__main__":
