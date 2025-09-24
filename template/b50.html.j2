@@ -24,6 +24,15 @@
             font-family: sans-serif;
             text-shadow: 0px 0px 5px #000;
         }
+
+        tr,
+        img {
+            height: 200px;
+        }
+
+        img {
+            width: 200px;
+        }
     </style>
 </head>
 
@@ -45,7 +54,7 @@
                 <td>
                     <a
                         href="https://search.bilibili.com/all?keyword=maimai%20{{ item.level | urlencode }}%20AP%20{{ item.music_title | urlencode }}">
-                        <img loading=lazy src="{{ item.cover_pic }}" style="height: 200px;">
+                        <img loading=lazy src="{{ item.cover_pic }}">
                     </a>
 
                 </td>
