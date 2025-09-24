@@ -34,14 +34,13 @@ def render_html(b50_rating: int, output: str | Path = "suggestion.html"):
     min_rating = b50_rating // 100 * 100
 
     if min_rating >= 15000:
-        target_total = min_rating + 100
         max_rating = min_rating + 100
     elif min_rating >= 13000:
-        target_total = (1 + min_rating // 500) * 500
         max_rating = min_rating + 100
     else:
-        target_total = (1 + min_rating // 1000) * 1000
         max_rating = min_rating + 200
+
+    target_total = max_rating
 
     print(f"目标 Rating: {target_total}")
 
@@ -58,7 +57,7 @@ def render_html(b50_rating: int, output: str | Path = "suggestion.html"):
 
     filtered = b50.filter(
         pl.col("player_rating").ge(min_rating),
-        pl.col("player_rating").le(max_rating),
+        pl.col("player_rating").lt(max_rating),
     )
 
     total = filtered.group_by(
@@ -160,5 +159,5 @@ def render_html(b50_rating: int, output: str | Path = "suggestion.html"):
 
 
 if __name__ == "__main__":
-    for rating in range(15000, 16401, 100):
+    for rating in range(5000, 16401, 100):
         render_html(rating, f"suggestion-{rating:05}.html")
