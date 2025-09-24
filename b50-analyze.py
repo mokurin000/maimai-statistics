@@ -92,6 +92,7 @@ def render_html(b50_rating: int, output: str | Path = "suggestion.html"):
                 return_dtype=pl.String,
             )
         )
+        .filter(pl.col("pass_rate").ge(0.98))
         .with_columns(
             pl.col("pass_rate").mul(100).round(2).cast(pl.String).add("%"),
         )
@@ -108,7 +109,6 @@ def render_html(b50_rating: int, output: str | Path = "suggestion.html"):
         )
         .collect()
         .sort("passed_players", "pass_rate", descending=True)
-        .drop("passed_players")
         .head(30)
     )
 

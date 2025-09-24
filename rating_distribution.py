@@ -62,14 +62,10 @@ def create_histogram(
 # 主程序
 if __name__ == "__main__":
     try:
-        file_path = "b50.parquet"
+        file_path = "players.parquet"
         df = load_data(file_path)
-        ratings = (
-            df.select(pl.col("userRating").struct.unnest())
-            .select("rating")
-            .collect()["rating"]
-        )
-        create_histogram(ratings, end=10001, output_file="below-w0-b50.html")
-        create_histogram(ratings, start=10000, output_file="after-w0-b50.html")
+        ratings = df.collect()["player_rating"]
+        create_histogram(ratings, end=10001, output_file="below-w0.html")
+        create_histogram(ratings, start=10000, output_file="after-w0.html")
     except Exception as e:
         print(f"Error: {e.__class__, __name__}: {str(e)}")

@@ -5,6 +5,8 @@
     <title>{{ title }}</title>
     <style>
         .styled-table {
+            width: 100vw;
+
             border-collapse: separate;
             border-spacing: 2px;
 
@@ -44,6 +46,7 @@
                 <th>music_title</th>
                 <th>difficulty</th>
                 <th>pass_rate</th>
+                <th>pass_count</th>
                 <th>nessacary</th>
             </tr>
         </thead>
@@ -52,8 +55,8 @@
             <tr class="bold-text" style="background-color: {{ item.color }}; text-align: center;">
 
                 <td>
-                    <a
-                        href="https://search.bilibili.com/all?keyword=maimai%20{{ item.level | urlencode }}%20AP%20{{ item.music_title | urlencode }}">
+                    <a href="https://search.bilibili.com/all?keyword=maimai%20{{ item.level | urlencode }}%20AP%20{{ item.music_title | urlencode }}"
+                        target="_blank" rel="noopener noreferrer">
                         <img loading=lazy src="{{ item.cover_pic }}">
                     </a>
 
@@ -63,6 +66,7 @@
                 </td>
                 <td>{{ item.difficulty }}</td>
                 <td>{{ item.pass_rate }}</td>
+                <td>{{ item.passed_players }}</td>
                 <td>{{ item.nessacary }}</td>
             </tr>
             {% endfor %}

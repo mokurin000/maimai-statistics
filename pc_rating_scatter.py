@@ -14,7 +14,7 @@ pc = (
 
 rating = (
     pl.scan_parquet("players.parquet")
-    .select(["user_id", "rating"])
+    .select(["user_id", "player_rating"])
     .join(pc, on="user_id")
     .drop("user_id")
     .collect()
@@ -22,7 +22,7 @@ rating = (
 
 
 x_data = rating["play_count"]
-y_data = rating["rating"]
+y_data = rating["player_rating"]
 
 
 def init_chart(
