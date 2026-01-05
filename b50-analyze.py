@@ -115,7 +115,7 @@ def rating_data(
             ]
         )
         .sort("passed_players", "pass_rate", descending=True)
-        .head(30)
+        .head(50)
     )
 
     def minimum_acc(difficulty: Decimal) -> str:
