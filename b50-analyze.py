@@ -1,8 +1,7 @@
 from decimal import Decimal
-from pathlib import Path
 
+import orjson
 import polars as pl
-from jinja2 import Template
 from pykakasi.kakasi import Kakasi
 
 KAKASI = Kakasi()
@@ -13,24 +12,31 @@ COLOR_MAP = {
     "MASTER": "#a147eb",
     "RE:MASTER": "#a777d6",
 }
-with open("template/b50.html.j2", "r", encoding="utf-8") as f:
-    HTML_TEMPLATE: Template = Template(f.read())
 
 
-def render_html(b50_rating: int, output: str | Path = "suggestion.html"):
-    musics = (
-        pl.scan_parquet("musics.parquet")
-        .select(["id", "name", "level", "difficulty"])
-        .rename({"id": "music_id", "name": "music_title"})
-    )
-    players = pl.scan_parquet("players.parquet").select(
+musics = (
+    pl.scan_parquet("musics.parquet")
+    .select(["id", "name", "level", "difficulty"])
+    .rename({"id": "music_id", "name": "music_title"})
+    .unique()
+    .collect()
+)
+players = (
+    pl.scan_parquet("players.parquet")
+    .select(
         [
             "user_id",
             "player_rating",
         ]
     )
-    b50 = pl.scan_parquet("b50.parquet").join(players, on="user_id")
+    .collect()
+)
+b50 = pl.read_parquet("b50.parquet").join(players, on="user_id")
 
+
+def rating_data(
+    b50_rating: int,
+) -> list[dict[str, str]]:
     min_rating = b50_rating // 100 * 100
 
     if min_rating >= 15000:
@@ -80,7 +86,7 @@ def render_html(b50_rating: int, output: str | Path = "suggestion.html"):
             (pl.col("passed_players") / pl.col("total_player")).alias("pass_rate")
         )
         .filter(pl.col("pass_rate") < 1)
-        .join(musics.unique(), on=["music_id", "level"])
+        .join(musics, on=["music_id", "level"])
         .with_columns(
             pl.col("level").map_elements(
                 lambda level: [
@@ -98,7 +104,6 @@ def render_html(b50_rating: int, output: str | Path = "suggestion.html"):
         .with_columns(
             pl.col("pass_rate").mul(100).round(2).cast(pl.String).add("%"),
         )
-        .lazy()
         .select(
             [
                 "level",
@@ -109,7 +114,6 @@ def render_html(b50_rating: int, output: str | Path = "suggestion.html"):
                 "music_id",
             ]
         )
-        .collect()
         .sort("passed_players", "pass_rate", descending=True)
         .head(30)
     )
@@ -129,35 +133,35 @@ def render_html(b50_rating: int, output: str | Path = "suggestion.html"):
         .alias("nessacary")
     )
 
-    with open(output, "w", encoding="utf-8") as f:
-        suggestion = list(suggestion.iter_rows(named=True))
-        for entry in suggestion:
-            entry: dict[str, str]
-            entry["color"] = COLOR_MAP[entry["level"]]
+    suggestion = list(suggestion.iter_rows(named=True))
+    for entry in suggestion:
+        entry: dict[str, str]
+        entry["color"] = COLOR_MAP[entry["level"]]
 
-            music_id = entry["music_id"]
-            entry["cover_pic"] = (
-                f"https://jacket.maimai.realtvop.top/{music_id % 10000:05}.png"
-            )
-
-            title = entry["music_title"]
-            difficulty: Decimal = entry["difficulty"]
-            if (difficulty * 10) % 10 < 6:
-                difficulty_category = f"{int(difficulty)}"
-            else:
-                difficulty_category = f"{int(difficulty)}+"
-            if not title[0].isascii():
-                title = KAKASI.convert(title)[0]["hira"]
-            entry["hint"] = (
-                f"{title[0]} / {difficulty_category} / {'DX' if entry['music_id'] > 10000 else 'SD'}"
-            )
-        f.write(
-            HTML_TEMPLATE.render(
-                data=suggestion, title=f"{min_rating}-{max_rating} 上分推荐"
-            )
+        music_id = entry["music_id"]
+        entry["cover_pic"] = (
+            f"https://jacket.maimai.realtvop.top/{music_id % 10000:05}.png"
         )
+
+        title = entry["music_title"]
+        difficulty: Decimal = entry["difficulty"]
+        entry["difficulty"] = f"{difficulty}"
+        if (difficulty * 10) % 10 < 6:
+            difficulty_category = f"{int(difficulty)}"
+        else:
+            difficulty_category = f"{int(difficulty)}+"
+        if not title[0].isascii():
+            title = KAKASI.convert(title)[0]["hira"]
+        entry["hint"] = (
+            f"{title[0]} / {difficulty_category} / {'DX' if entry['music_id'] > 10000 else 'SD'}"
+        )
+
+    return suggestion
 
 
 if __name__ == "__main__":
+    all_data = {}
     for rating in range(5000, 16401, 100):
-        render_html(rating, f"suggestion-{rating:05}.html")
+        all_data[f"{rating}"] = {"data": rating_data(rating)}
+    with open("data.json", "wb") as f:
+        f.write(orjson.dumps(all_data))
