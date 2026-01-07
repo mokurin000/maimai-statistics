@@ -78,10 +78,38 @@ c = (
     )
     .add("", list(df.iter_rows()), "china")
     .set_global_opts(
-        title_opts=opts.TitleOpts(title="舞萌玩家地区分布"),
+        title_opts=opts.TitleOpts(title="最常上机地区"),
         visualmap_opts=opts.VisualMapOpts(
             max_=80000,
         ),
     )
-    .render("maimai-region.html")
+    .render("maimai-region-common.html")
+)
+
+df = (
+    pl.scan_parquet("regions.parquet")
+    .sort("created", descending=False)
+    .unique(subset=["user_id"], keep="first")
+    .with_columns(pl.col("region_id").map_elements(region_name, return_dtype=pl.String))
+    .group_by("region_id")
+    .len()
+    .sort("len", descending=True)
+    .collect()
+)
+
+c = (
+    Map(
+        init_opts=opts.InitOpts(
+            width="1600px",  # 设置图表宽度
+            height="1000px",  # 设置图表高度
+        )
+    )
+    .add("", list(df.iter_rows()), "china")
+    .set_global_opts(
+        title_opts=opts.TitleOpts(title="最早上机地区"),
+        visualmap_opts=opts.VisualMapOpts(
+            max_=80000,
+        ),
+    )
+    .render("maimai-region-first.html")
 )
