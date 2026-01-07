@@ -36,6 +36,7 @@ b50 = pl.read_parquet("b50.parquet").join(players, on="user_id")
 
 def rating_data(
     b50_rating: int,
+    sort_by_achievement: bool = False,
 ) -> list[dict[str, str]]:
     min_rating = b50_rating // 100 * 100
 
@@ -114,8 +115,6 @@ def rating_data(
                 "music_id",
             ]
         )
-        .sort("passed_players", "pass_rate", descending=True)
-        .head(50)
     )
 
     def minimum_acc(difficulty: Decimal) -> str:
@@ -127,12 +126,19 @@ def rating_data(
         )
         return f"{acc[:-4]}.{acc[-4:]}%"
 
+    if sort_by_achievement:
+        passed = passed.sort(
+            [pl.col("difficulty").mul(-1), "passed_players", "pass_rate"],
+            descending=True,
+        ).head(50)
+    else:
+        passed = passed.sort(["passed_players", "pass_rate"], descending=True).head(50)
+
     suggestion = passed.with_columns(
         pl.col("difficulty")
         .map_elements(minimum_acc, return_dtype=pl.String)
         .alias("nessacary")
     )
-
     suggestion = list(suggestion.iter_rows(named=True))
     for entry in suggestion:
         entry: dict[str, str]
@@ -161,7 +167,13 @@ def rating_data(
 
 if __name__ == "__main__":
     all_data = {}
-    for rating in range(5000, 16401, 100):
+    for rating in range(1000, 16401, 100):
         all_data[f"{rating}"] = {"data": rating_data(rating)}
     with open("data.json", "wb") as f:
+        f.write(orjson.dumps(all_data))
+
+    all_data = {}
+    for rating in range(1000, 16401, 100):
+        all_data[f"{rating}"] = {"data": rating_data(rating, sort_by_achievement=True)}
+    with open("data_achievement.json", "wb") as f:
         f.write(orjson.dumps(all_data))
