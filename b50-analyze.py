@@ -156,7 +156,7 @@ def rating_data(
 
         music_id = entry["music_id"]
         entry["cover_pic"] = (
-            f"https://jacket.maimai.realtvop.top/{music_id % 10000:05}.png"
+            f"https://assets2.lxns.net/maimai/jacket/{music_id % 10000}.png"
         )
 
         title = entry["music_title"]
