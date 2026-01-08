@@ -117,24 +117,31 @@ def rating_data(
         )
     )
 
+    difficulty_acc_map: dict[Decimal, str] = {}
+
     def minimum_acc(difficulty: Decimal) -> str:
+        if difficulty in difficulty_acc_map:
+            return difficulty_acc_map[difficulty]
         acc = (
             rating.filter(pl.col("difficulty") <= difficulty)
             .get_column("achievement")
             .cast(pl.String)
             .first()
         )
-        return f"{acc[:-4]}.{acc[-4:]}%"
+        result = f"{acc[:-4]}.{acc[-4:]}%"
+
+        difficulty_acc_map[difficulty] = result
+        return result
 
     if sort_by_difficulty:
         passed = passed.sort(
             [
                 pl.col("difficulty").mul(-1),
-                pl.col("pass_rate").str.strip_suffix("%").cast(pl.Float64),
                 "passed_players",
+                pl.col("pass_rate").str.strip_suffix("%").cast(pl.Float64),
             ],
             descending=True,
-        ).head(50)
+        ).head(100)
     else:
         passed = passed.sort(
             [
@@ -142,7 +149,7 @@ def rating_data(
                 "passed_players",
             ],
             descending=True,
-        ).head(50)
+        ).head(100)
 
     suggestion = passed.with_columns(
         pl.col("difficulty")
