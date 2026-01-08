@@ -145,8 +145,8 @@ def rating_data(
     else:
         passed = passed.sort(
             [
-                pl.col("pass_rate").str.strip_suffix("%").cast(pl.Float64),
                 "passed_players",
+                pl.col("pass_rate").str.strip_suffix("%").cast(pl.Float64),
             ],
             descending=True,
         ).head(100)
