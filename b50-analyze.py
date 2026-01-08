@@ -141,7 +141,7 @@ def rating_data(
                 pl.col("pass_rate").str.strip_suffix("%").cast(pl.Float64),
             ],
             descending=True,
-        ).head(100)
+        ).head(150)
     else:
         passed = passed.sort(
             [
@@ -149,7 +149,7 @@ def rating_data(
                 pl.col("pass_rate").str.strip_suffix("%").cast(pl.Float64),
             ],
             descending=True,
-        ).head(100)
+        ).head(150)
 
     suggestion = passed.with_columns(
         pl.col("difficulty")
